@@ -22,17 +22,23 @@ read -p "Enter your choice: " choice
 
 # Function to show Wi-Fi password for connected network
 show_wifi_password() {
-    # Retrieve the name of the connected Wi-Fi network
-    ssid=$(nmcli -t -f active,ssid dev wifi | grep '^yes' | cut -d':' -f2)
-    if [ -z "$ssid" ]; then
-        echo -e "${random_color}No connected Wi-Fi network found.${reset_color}"
-        return
+    # Try to find the Wi-Fi configuration file locations
+    config_files=("/etc/NetworkManager/system-connections/*" "/etc/wpa_supplicant/*")
+    
+    found=0
+    for file in ${config_files[@]}; do
+        if [ -f "$file" ]; then
+            echo -e "${random_color}Searching in $file...${reset_color}"
+            grep -i "psk=" "$file" 2>/dev/null
+            if [ $? -eq 0 ]; then
+                found=1
+            fi
+        fi
+    done
+    
+    if [ $found -eq 0 ]; then
+        echo -e "${random_color}No password found in configuration files.${reset_color}"
     fi
-
-    # Show the Wi-Fi password
-    echo -e "${random_color}Retrieving password for SSID: $ssid...${reset_color}"
-    # Replace `nmcli` with `wpa_supplicant` if applicable
-    nmcli -s -g 802-11-wireless-security.psk connection show "$ssid" 2>/dev/null || echo -e "${random_color}Unable to retrieve the password.${reset_color}"
 }
 
 # Execute user's choice
@@ -42,4 +48,4 @@ case $choice in
     *) echo -e "${random_color}Invalid choice! Exiting...${reset_color}" ;;
 esac
 
-echo -e "${random_color}Thank you for using the Wi-Fi Password Finder!${reset_color}"
+echo -e "${random_color}Thank you for using the Wi-Fi Password Finder!${reset_color}" 
